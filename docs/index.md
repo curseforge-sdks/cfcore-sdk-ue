@@ -153,6 +153,12 @@ for you - via AssureClientModsUpdated ("Assure Client Mods Updated" in BP).
 ICFCoreApi.ICFCoreApiAuthorized.GeneratePremiumCheckoutUrl and open the user's
 default browser to the url returned. You'll need to poll (with a 2 sec timer)
 the CheckMods api so that you know when the user is ready to install the mod.
+- On console, fur purchasing a mod - call the
+ICFCoreApi.ICFCoreApiAuthorized.InitiatePurchase to get the relevant details
+for purchasing on the user device (keep track of the transaction id returned)
+and once the local purchase is completed, call the
+ICFCoreApi.ICFCoreApiAuthorized.FinalizePurchase function to complete the
+purchase
 
 ## Logging
 
@@ -168,3 +174,45 @@ cfcore settings (in the project settings).
 
 If enabled, you can control the max size of a single log file and the max number
 of old (historic) logs to save on disk.
+
+## Install Mod Additional Parameters
+
+Read the following section to understand the different mod installation
+parameters you can use when calling the BP "Install Mod Extended" function or
+the c++ ICFCoreLibrary::Install function (the additional params override one).
+
+### tracking
+
+This key-value map allows sending tracking events to the download. We use this
+for creating custom partner reports with additional annotations. For example,
+how many mod installations are perfomed by the user via the Browser UI versus
+how many mod installations were performed as part of the user joining a server.
+
+### throttle_download_kbps
+
+This parameter allows throttling the download of mods to a certain kilobytes per
+second rate. The unit of this field is kb - so 100 = 100KB = 102,400 bytes.
+
+When set to 0 (default) there is not throttling.
+
+You might want to use this if performing mod installations in the background,
+while the game is running, and you don't want to hurt the user's ping.
+
+### dynamicContent
+
+Dynamic content means mods (usually cosmetics) which are downloaded
+automatically by the game so that all users can share visuals.
+
+A usecase for dynamic content is when in a multiplayer session, one player has a
+skin/cosmetic and we want all other players to be able to see the skin as played
+by the user who owns it. In this case, the game can start downloading the
+relevant mod (for this skin) so that it resides on all player's computers but is
+not considered installed - meaning they cannot use the skin, only view those who
+actually own it.
+
+When FInstalledMod.dynamicContent is true, it means the user has the mod
+installed but does not own it or didn't manually request to install it.
+
+If later the user decides to purchase/install it (depending on the mod being
+premium or not) - the reguler installation functions (BP or C++) will assure the
+mod is switched from have FInstalledMod.dynamicContent being true to false.
