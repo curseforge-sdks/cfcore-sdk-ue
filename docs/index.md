@@ -216,3 +216,8 @@ installed but does not own it or didn't manually request to install it.
 If later the user decides to purchase/install it (depending on the mod being
 premium or not) - the reguler installation functions (BP or C++) will assure the
 mod is switched from have FInstalledMod.dynamicContent being true to false.
+
+> **NOTE:** If you plan on hosting premium dynamic content - it is important to
+> fill in the |dynamicContentCategoryIds| cfcore setting - so that the SDK will
+> enforce a premium ownership check for dynamic content (in case a user
+> manipulates the local library metadata files on their device).
