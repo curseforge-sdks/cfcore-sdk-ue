@@ -51,8 +51,14 @@ void ATestGameMode::StartPlay() {
   // Where the user's settings (enabled mods, auth token etc...) will be saved
   settings.userDataDirectory = TEXT("%USER_DIR%/demo_game/mods/.eternal");
 
+  // Initialization options contain the user ID.
+  // See the struct documentation for more information.
+  FCFCoreInitializationOptions initialization_options;
+  initialization_options.userContextId = "exampleUserId";
+
   CFCoreContext::GetInstance()->Initialize(
     settings,
+    initialization_options,
     ICFCore::InitializeDelegate::CreateUObject(
       this,
       &ATestGameMode::OnCFCoreInitialized));

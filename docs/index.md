@@ -8,6 +8,11 @@ Here are some of our design decisions for the SDK:
 - Keep the implementation as simple as possible, allowing developers to easily
 maintain their own fork or contribute to the code-base
 
+## Analytics
+Our plugin collects analytics data in two categories, configurable in the plugin's settings:
+- **Performance and Stability** (Enabled by default) - Collects information on the mod ecosystem’s performance and stability, including success/failure rates for installing, updating, and managing mods.
+- **User Engagement**: (Disabled by default) - Captures data on player interactions in-game. This includes mod browser's funnels and engagement with mods in the game.
+
 ## Threading model
 
 The assumption is that all calls to the SDK are performed on the game's main
@@ -221,3 +226,29 @@ mod is switched from have FInstalledMod.dynamicContent being true to false.
 > fill in the |dynamicContentCategoryIds| cfcore setting - so that the SDK will
 > enforce a premium ownership check for dynamic content (in case a user
 > manipulates the local library metadata files on their device).
+
+## The Library Interface
+
+### General
+
+The library interface (c++ ```CFCoreContext::GetInstance()->Library()```)
+provides a way to query which mods are installed for the current system/user and
+to manage these mods (e.g. install/update/uninstall).
+
+### Mod Validations
+
+There are different types of mod validations that are either automatically ran
+by the SDK or require explicit calls by the game.
+
+#### ICFCoreLibrary::PerformModsValidation
+
+This function allows to perform a content check-sum on the locally installed
+mods and detect if there are any invalid mods.
+
+Mods will be set to Invalid in case of:
+
+- The given mod id is unknown by the CurseForge servers
+- The given mod doesn't exist on the local disk
+- The given mod doesn't match the server-side check-sum hash
+
+> **NOTE:** The check-sum process can be lengthy depending on the mod size
