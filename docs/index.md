@@ -1,4 +1,4 @@
-## Design decisions
+﻿## Design decisions
 
 Here are some of our design decisions for the SDK:
 
@@ -9,9 +9,15 @@ Here are some of our design decisions for the SDK:
 maintain their own fork or contribute to the code-base
 
 ## Analytics
-Our plugin collects analytics data in two categories, configurable in the plugin's settings:
-- **Performance and Stability** (Enabled by default) - Collects information on the mod ecosystem’s performance and stability, including success/failure rates for installing, updating, and managing mods.
-- **User Engagement**: (Disabled by default) - Captures data on player interactions in-game. This includes mod browser's funnels and engagement with mods in the game.
+Our plugin can collect analytics data in two categories, configurable in the plugin's settings:
+- **Performance and Stability** (Enabled by default) - Collects information on the mod ecosystem's performance and stability, including success/failure rates for installing, updating, and managing mods. The SDK collects these analytics automatically if the category is enabled.
+
+- **User Engagement** (Disabled by default) - Captures data on player interactions in-game. This includes mod browser's funnels and engagement with mods in the game.
+The SDK does not collect User Engagement analytics for you by default. To collect these analytics, you need to do the following:
+    - Enable the User Engagement analytics category in CFCore's plugin settings.
+    - Use the SDK's analytics functions in your game's code.
+    > For example - use UCFCoreSubsystem::AnalyticsSendGamePlaySession on every game session (unmodded or modded).
+> **NOTE**: Make sure the SDK is initialized before using the SDK's analytics functions.
 
 ## Threading model
 
@@ -26,7 +32,7 @@ every async operation will callback on the game's main thread.
 
 ## The SDK plugins
 
-Currently, the SDK contains a 3 plugins:
+Currently, the SDK contains 3 plugins:
 - cfcore - the business logic plugin - search, install and manage mods locally,
 without the user interface.
 - cfcore_ui - the user interface mod browser based on UMG.
@@ -165,6 +171,62 @@ and once the local purchase is completed, call the
 ICFCoreApi.ICFCoreApiAuthorized.FinalizePurchase function to complete the
 purchase
 
+## Try Before You Buy
+
+A game can allow users to trial premium mods for a limited time (e.g. 24 hours)
+before deciding to purchase them. Each user gets one trial period per mod.
+
+### Enabling
+
+Contact us and we'll enable **TryBeforeYouBuy** for your game in the
+Game Moderation console. No code changes are required to turn it on.
+
+### Checking if a mod supports Try Before You Buy
+
+Each mod's `FCFCoreMod.premiumDetails.trialDetails` field describes its trial
+configuration:
+
+- `isEnabled` - whether the TBYB trial feature is enabled for this specific mod.
+- `allowedHours` - how many hours the trial period lasts.
+
+Use `isEnabled` to decide whether to show a **Start Trial** button on the mod
+page. `allowedHours` can be displayed as part of the trial offer
+(e.g. "Try free for 24 hours").
+
+### Checking ownership and trial status at session start
+
+Before loading any premium mod at the start of a game session, call
+`GetMyPremiumModsV2` (Blueprint: **Get My Premium Mods V2**). This returns two
+lists:
+
+- `ownedMods` - mod ids the user has purchased. These can always be loaded.
+- `trialMods` - mod ids the user is currently trialling, each with:
+  - `isExpired` - set by the server; use this to determine whether the trial
+    has ended. Do **not** compare `expiresAt` against the local clock - users
+    can manipulate it.
+  - `expiresAt` (UTC) - for UI display only (e.g. showing a countdown timer).
+
+A mod is usable if its id appears in `ownedMods` **or** it appears in
+`trialMods` and `isExpired` is `false`. If it appears in neither, block
+the user from loading it and prompt them to purchase.
+
+> **NOTE:** It is recommended to avoid interrupting an active game session when
+> a trial expires. Enforcing the check only at the start of a new session gives
+> players a smoother experience.
+
+### User journey
+
+1. User opens the mod page in the in-game browser and clicks **Start Trial**
+   (handled by the cfcore_ui plugin).
+2. The mod installs and the 24-hour countdown begins.
+3. The user plays with full access to the mod.
+4. When the trial expires the current session continues uninterrupted.
+5. On the next session start, `GetMyPremiumModsV2` will no longer include the
+   mod in `trialMods`. The mod is disabled and the user is shown a purchase
+   prompt.
+
+
+
 ## Logging
 
 The cfcore plugin has some internal logs that are being written via the standard
@@ -219,7 +281,7 @@ When FInstalledMod.dynamicContent is true, it means the user has the mod
 installed but does not own it or didn't manually request to install it.
 
 If later the user decides to purchase/install it (depending on the mod being
-premium or not) - the reguler installation functions (BP or C++) will assure the
+premium or not) - the regular installation functions (BP or C++) will assure the
 mod is switched from have FInstalledMod.dynamicContent being true to false.
 
 > **NOTE:** If you plan on hosting premium dynamic content - it is important to
@@ -252,3 +314,33 @@ Mods will be set to Invalid in case of:
 - The given mod doesn't match the server-side check-sum hash
 
 > **NOTE:** The check-sum process can be lengthy depending on the mod size
+
+## The Subscription Interface
+
+Subscriptions allow users to manage their mod list across devices. When a user
+subscribes to a mod on any device, it can be automatically installed on all
+other devices where the game is running.
+
+> **NOTE:** Subscriptions must be enabled for your game on the CurseForge
+> console. Please contact us to set this up before using these APIs.
+
+Automatic management is best used while the player is in menus, launchers, or
+web-style UI. Avoid running it during active gameplay, where installs, updates,
+or uninstalls can interfere with content the game is actively using.
+
+The SDK exposes subscribe and unsubscribe functions via `UCFCoreSubsystem`.
+`Subscribe` subscribes to a mod then installs it.
+`Unsubscribe` unsubscribes to a mod then uninstalls it.
+
+The SDK can also keep installed mods in sync with the user's server-side
+subscriptions by calling `SyncSubscriptions`, by building a sync plan and
+executing it manually, or by enabling automatic management in the background.
+
+Recommended patterns:
+
+- Run `SyncSubscriptions` once at startup when you do not need the plan.
+- Use `GetSyncPlan` and `ExecuteSyncPlan` when you want to inspect the plan.
+- Enable auto management while the user is in a mod browser, menu, or web UI.
+- For lower-risk background checks, keep auto management enabled with only
+  `allowUpdateActions` turned on.
+

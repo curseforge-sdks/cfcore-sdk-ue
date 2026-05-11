@@ -55,10 +55,10 @@ void ATestGameMode::StartPlay() {
   // See the struct documentation for more information.
   FCFCoreInitializationOptions initialization_options;
   initialization_options.userContextId = "exampleUserId";
+  settings.initOptions = initialization_options;
 
   CFCoreContext::GetInstance()->Initialize(
     settings,
-    initialization_options,
     ICFCore::InitializeDelegate::CreateUObject(
       this,
       &ATestGameMode::OnCFCoreInitialized));

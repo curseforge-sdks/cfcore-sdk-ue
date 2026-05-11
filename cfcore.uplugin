@@ -1,0 +1,23 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.42.0",
+  "FriendlyName": "cfcore",
+  "Description": "",
+  "Category": "Other",
+  "CreatedBy": "Overwolf Ltd.",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "https://",
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "cfcore",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}

@@ -72,3 +72,13 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+/node_modules/
+/package-lock.json
+/output/
+/dist/
+/code_styles.md
+tests/
+
+# Docs
+/*.md
+!/README.md
